@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - CuisineCompass</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .profile-card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .friend-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+        }
+        
+        .rating-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+            border-left: 4px solid #667eea;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+        }
+        
+        .nav-tabs .nav-link.active {
+            background-color: #667eea;
+            color: white;
+        }
+        
+        .recommendation-card {
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .weight-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+        
+        .friend-badge {
+            background: #28a745;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark">
+        <div class="container-fluid">
+            <a href="/" class="navbar-brand">🍽️ CuisineCompass</a>
+            <div>
+                <span class="text-white me-3" id="userInfo"></span>
+                <a href="/" class="btn btn-light btn-sm">← Back to Map</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="profile-card text-center">
+                    <div class="mb-3">
+                        <div style="width: 100px; height: 100px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem;">
+                            👤
+                        </div>
+                    </div>
+                    <h4 id="profileUsername">Loading...</h4>
+                    <p class="text-muted" id="profileEmail"></p>
+                    <p class="text-muted" id="profileCity"></p>
+                    <div class="mt-3">
+                        <div class="stat-item mb-2">
+                            <strong id="trustScore">0</strong>
+                            <small class="d-block text-muted">Trust Score</small>
+                        </div>
+                        <div class="stat-item mb-2">
+                            <strong id="totalRatings">0</strong>
+                            <small class="d-block text-muted">Reviews</small>
+                        </div>
+                        <div class="stat-item">
+                            <strong id="friendCount">0</strong>
+                            <small class="d-block text-muted">Friends</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <ul class="nav nav-tabs mb-3" id="profileTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#reviews" type="button">
+                            My Reviews
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#friends" type="button">
+                            Friends
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#recommendations" type="button">
+                            🔥 Friend Recommendations
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="profileTabContent">
+                    <div class="tab-pane fade show active" id="reviews">
+                        <div id="myReviews">
+                            <div class="text-center py-4">
+                                <div class="spinner-border text-primary"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="friends">
+                        <div class="profile-card mb-3">
+                            <h5>Add Friend</h5>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="searchUsername" placeholder="Search username...">
+                                <button class="btn btn-primary" onclick="searchUsers()">Search</button>
+                            </div>
+                            <div id="searchResults" class="mt-3"></div>
+                        </div>
+
+                        <div class="profile-card mb-3" id="friendRequestsSection" style="display: none;">
+                            <h5>Friend Requests</h5>
+                            <div id="friendRequests"></div>
+                        </div>
+
+                        <div class="profile-card">
+                            <h5>My Friends</h5>
+                            <div id="friendsList">
+                                <div class="text-center py-4">
+                                    <div class="spinner-border text-primary"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="recommendations">
+                        <div class="alert alert-info">
+                            <strong>🎯 How Friend Recommendations Work:</strong><br>
+                            When your friends rate a restaurant ≥4 stars, it appears here!<br>
+                            <strong>Friend ratings count 2x more</strong> than public ratings, giving you personalized suggestions based on trusted opinions.
+                        </div>
+                        <div id="recommendationsList">
+                            <div class="text-center py-4">
+                                <div class="spinner-border text-primary"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        let currentUser = null;
+
+       async function checkLogin() {
+    try {
+        const response = await fetch('/api/current-user');
+        const data = await response.json();
+        
+        if (data.success) {
+            currentUser = data.user;
+            
+            // Update navbar
+            document.getElementById('userInfo').textContent = `👤 ${data.user.username}`;
+            
+            // Update Profile Card
+            document.getElementById('profileUsername').textContent = data.user.username;
+            document.getElementById('profileEmail').textContent = data.user.email || '';
+            document.getElementById('profileCity').textContent = data.user.city || 'Manipal';
+            
+            // ← THIS WAS MISSING
+            document.getElementById('trustScore').textContent = data.user.trust_score || 0;
+            
+            loadProfileData();   // This will load reviews, friends, etc.
+        } else {
+            alert('Please login first');
+            window.location.href = '/';
+        }
+    } catch (error) {
+        console.error(error);
+        alert('Please login first');
+        window.location.href = '/';
+    }
+}
+
+        function loadProfileData() {
+            document.getElementById('profileUsername').textContent = currentUser.username;
+            loadMyReviews();
+            loadFriends();
+            loadFriendRequests();
+            loadRecommendations();
+        }
+
+        async function loadMyReviews() {
+    const myReviewsDiv = document.getElementById('myReviews');
+    
+    try {
+        const response = await fetch('/api/ratings/user');
+        const data = await response.json();
+
+        if (!data.success) {
+            myReviewsDiv.innerHTML = `<p class="text-danger">Failed to load reviews: ${data.message || ''}</p>`;
+            return;
+        }
+
+        // Update the count in profile card
+        document.getElementById('totalRatings').textContent = data.count || data.ratings.length || 0;
+
+        if (!data.ratings || data.ratings.length === 0) {
+            myReviewsDiv.innerHTML = `
+                <p class="text-center text-muted py-4">
+                    No reviews yet. Start reviewing restaurants on the map!
+                </p>`;
+            return;
+        }
+
+        // Build review cards
+        const html = data.ratings.map(r => `
+            <div class="rating-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <a href="/restaurant/${r.restaurant_id}" class="text-decoration-none">
+                            <strong>${r.restaurant_name}</strong>
+                        </a>
+                        <div class="text-warning mt-1">⭐ ${r.overall_rating.toFixed(1)}</div>
+                    </div>
+                    <small class="text-muted">${r.created_at}</small>
+                </div>
+                ${r.review_text ? `<p class="mb-0 mt-2">${r.review_text}</p>` : ''}
+                ${r.visit_date ? `<small class="text-muted">Visited: ${r.visit_date}</small>` : ''}
+            </div>
+        `).join('');
+
+        myReviewsDiv.innerHTML = html;
+
+    } catch (error) {
+        console.error('Error loading my reviews:', error);
+        myReviewsDiv.innerHTML = `
+            <p class="text-center text-danger py-4">
+                Error loading your reviews. Please try again later.
+            </p>`;
+    }
+}
+
+        async function loadFriends() {
+            try {
+                const response = await fetch('/api/friends', {credentials: 'include'});
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('friendCount').textContent = data.count;
+
+                    if (data.friends.length > 0) {
+                        const html = data.friends.map(f => `
+                            <div class="friend-card">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>${f.username}</strong>
+                                        <small class="d-block text-muted">${f.city}</small>
+                                    </div>
+                                    <small class="text-muted">Friends since ${new Date(f.accepted_at).toLocaleDateString()}</small>
+                                </div>
+                            </div>
+                        `).join('');
+                        
+                        document.getElementById('friendsList').innerHTML = html;
+                    } else {
+                        document.getElementById('friendsList').innerHTML = '<p class="text-center text-muted">No friends yet. Search and add friends!</p>';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading friends:', error);
+            }
+        }
+
+        async function loadFriendRequests() {
+            try {
+                const response = await fetch('/api/friends/requests');
+                const data = await response.json();
+
+                if (data.success && data.incoming.length > 0) {
+                    document.getElementById('friendRequestsSection').style.display = 'block';
+                    
+                    const html = data.incoming.map(r => `
+                        <div class="friend-card">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>${r.username}</strong>
+                                    <small class="d-block text-muted">Sent ${new Date(r.requested_at).toLocaleDateString()}</small>
+                                </div>
+                                <button class="btn btn-sm btn-primary" onclick="acceptFriendRequest(${r.friendship_id})">
+                                    Accept
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    document.getElementById('friendRequests').innerHTML = html;
+                }
+            } catch (error) {
+                console.error('Error loading friend requests:', error);
+            }
+        }
+
+        async function loadRecommendations() {
+    const container = document.getElementById('recommendationsList');
+    
+    try {
+        const response = await fetch('/api/friends/recommendations');
+        const data = await response.json();
+
+        if (!data.success) {
+            container.innerHTML = `<p class="text-danger">Failed to load recommendations</p>`;
+            return;
+        }
+
+        if (!data.recommendations || data.recommendations.length === 0) {
+            container.innerHTML = `
+                <div class="text-center text-muted py-4">
+                    <h5>📭 No recommendations yet</h5>
+                    <p>Add friends and when they rate restaurants highly (≥4 stars), you'll see personalized recommendations here!</p>
+                    <p><strong>Friend ratings count 2x more than public ratings!</strong></p>
+                </div>`;
+            return;
+        }
+
+        // If we have recommendations, show them
+        const html = data.recommendations.map(r => `
+            <div class="recommendation-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <a href="/restaurant/${r.restaurant_id}" class="text-decoration-none">
+                            <strong>${r.name}</strong>
+                        </a>
+                        <div class="mt-1">
+                            <span class="text-warning">⭐ ${r.avg_rating.toFixed(1)}</span>
+                        </div>
+                        <div class="mt-1">
+                            <span class="friend-badge">👥 FROM FRIEND</span>
+                            <small class="text-muted ms-2">Recommended by <strong>${r.recommended_by}</strong></small>
+                        </div>
+                        <small class="text-muted d-block mt-2">📍 ${r.address}</small>
+                    </div>
+                    <div class="text-end">
+                        <div class="weight-badge">
+                            2x WEIGHT<br>
+                            ${r.weight_score.toFixed(1)}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        container.innerHTML = html;
+
+    } catch (error) {
+        console.error('Error loading recommendations:', error);
+        container.innerHTML = `<p class="text-danger">Error loading recommendations. Please try again.</p>`;
+    }
+}
+
+        async function searchUsers() {
+            const query = document.getElementById('searchUsername').value.trim();
+            
+            if (query.length < 2) {
+                alert('Enter at least 2 characters');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                if (data.success && data.users.length > 0) {
+                    const html = data.users.map(u => `
+                        <div class="friend-card">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>${u.username}</strong>
+                                    <small class="d-block text-muted">${u.city}</small>
+                                </div>
+                                <button class="btn btn-sm btn-primary" onclick="sendFriendRequest(${u.user_id})">
+                                    Add Friend
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    document.getElementById('searchResults').innerHTML = html;
+                } else {
+                    document.getElementById('searchResults').innerHTML = '<p class="text-muted">No users found</p>';
+                }
+            } catch (error) {
+                alert('Search failed');
+            }
+        }
+
+        async function sendFriendRequest(userId) {
+            try {
+                const response = await fetch('/api/friends/request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ to_user_id: userId })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('✅ Friend request sent!');
+                    document.getElementById('searchResults').innerHTML = '';
+                    document.getElementById('searchUsername').value = '';
+                } else {
+                    alert('❌ ' + data.message);
+                }
+            } catch (error) {
+                alert('❌ Failed to send request');
+            }
+        }
+
+        async function acceptFriendRequest(friendshipId) {
+            try {
+                const response = await fetch(`/api/friends/accept/${friendshipId}`, {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('✅ Friend request accepted!');
+                    loadFriends();
+                    loadFriendRequests();
+                    loadRecommendations();
+                } else {
+                    alert('❌ ' + data.message);
+                }
+            } catch (error) {
+                alert('❌ Failed to accept request');
+            }
+        }
+
+        window.onload = checkLogin;
+    </script>
+</body>
+</html>
