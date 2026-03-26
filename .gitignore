@@ -1,0 +1,64 @@
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+env.bak/
+venv.bak/
+
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Flask / Web specific
+instance/
+.webassets-cache/
+*.log
+*.pot
+*.mo
+static/css/*.css.map
+static/js/*.js.map
+
+# Database & Credentials (VERY IMPORTANT)
+.env
+*.db
+*.sqlite3
+*.sqlite
+oracle_wallet/
+tnsnames.ora
+sqlnet.ora
+
+# IDE / Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Temporary & Log files
+*.log
+logs/
+temp/
+tmp/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# Development only 
+*.pyc
+*.pyo
