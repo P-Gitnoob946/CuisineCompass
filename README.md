@@ -76,4 +76,3 @@ Feel free to fork the repo, make improvements, and submit a Pull Request.
 ---
 
 Made with ❤️ for learning Flask + Oracle Database
-```
