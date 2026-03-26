@@ -62,3 +62,6 @@ htmlcov/
 # Development only 
 *.pyc
 *.pyo
+"__pycache__/" 
+"*.pyc" 
+"*.pyo" 
