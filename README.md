@@ -77,7 +77,3 @@ Feel free to fork the repo, make improvements, and submit a Pull Request.
 
 Made with ❤️ for learning Flask + Oracle Database
 ```
-
-**Just copy the entire block above** (from `# CuisineCompass` till the end) and paste it into your `README.md` file.
-
-Done! Let me know if you want any small changes.
