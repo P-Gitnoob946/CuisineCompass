@@ -76,6 +76,44 @@
             border-radius: 10px;
             font-size: 0.75rem;
         }
+        
+        .flagged-review-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+            border-left: 4px solid #dc3545;
+        }
+        
+        .flagged-review-card.approved {
+            border-left-color: #28a745;
+        }
+        
+        .flagged-review-card.rejected {
+            border-left-color: #6c757d;
+        }
+        
+        .badge-pending {
+            background-color: #ffc107;
+            color: #000;
+        }
+        
+        .badge-approved {
+            background-color: #28a745;
+        }
+        
+        .badge-rejected {
+            background-color: #dc3545;
+        }
+        
+        .flagged-reason {
+            background-color: #fff3cd;
+            padding: 8px;
+            border-radius: 5px;
+            border-left: 3px solid #ffc107;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -135,6 +173,11 @@
                             🔥 Friend Recommendations
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation" id="moderationTab" style="display: none;">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#moderation" type="button">
+                            🛡️ Moderation
+                        </button>
+                    </li>
                 </ul>
 
                 <div class="tab-content" id="profileTabContent">
@@ -183,6 +226,64 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- MODERATION TAB (Admin Only) -->
+                    <div class="tab-pane fade" id="moderation">
+                        <div class="alert alert-warning">
+                            <strong>🛡️ Content Moderation</strong><br>
+                            Reviews containing inappropriate language are automatically flagged for review.
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <div class="profile-card">
+                                    <div class="row text-center">
+                                        <div class="col-md-3">
+                                            <div class="stat-item">
+                                                <h3 id="statPending">0</h3>
+                                                <small class="text-muted">Pending</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="stat-item">
+                                                <h3 id="statApproved" class="text-success">0</h3>
+                                                <small class="text-muted">Approved</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="stat-item">
+                                                <h3 id="statRejected" class="text-danger">0</h3>
+                                                <small class="text-muted">Rejected</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="stat-item">
+                                                <h3 id="statTotal">0</h3>
+                                                <small class="text-muted">Total</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="profile-card">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5>Flagged Reviews</h5>
+                                <select class="form-select w-auto" id="statusFilter" onchange="loadFlaggedReviews()">
+                                    <option value="pending" selected>Pending</option>
+                                    <option value="approved">Approved</option>
+                                    <option value="rejected">Rejected</option>
+                                </select>
+                            </div>
+                            
+                            <div id="flaggedReviewsList">
+                                <div class="text-center py-4">
+                                    <div class="spinner-border text-primary"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -211,6 +312,12 @@
             
             // ← THIS WAS MISSING
             document.getElementById('trustScore').textContent = data.user.trust_score || 0;
+            
+            // Show moderation tab only for admins
+            if (data.user.role === 'admin') {
+                document.getElementById('moderationTab').style.display = 'block';
+                loadModerationStats();
+            }
             
             loadProfileData();   // This will load reviews, friends, etc.
         } else {
@@ -478,6 +585,139 @@
                 alert('❌ Failed to accept request');
             }
         }
+
+        // ============================================
+        // MODERATION FUNCTIONS
+        // ============================================
+
+        async function loadModerationStats() {
+            try {
+                const response = await fetch('/api/moderation/stats');
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('statPending').textContent = data.stats.pending_count;
+                    document.getElementById('statApproved').textContent = data.stats.approved_count;
+                    document.getElementById('statRejected').textContent = data.stats.rejected_count;
+                    document.getElementById('statTotal').textContent = data.stats.total_flagged;
+                    
+                    // Auto-load pending reviews
+                    loadFlaggedReviews();
+                }
+            } catch (error) {
+                console.error('Error loading moderation stats:', error);
+            }
+        }
+
+        async function loadFlaggedReviews() {
+            const status = document.getElementById('statusFilter').value;
+            const container = document.getElementById('flaggedReviewsList');
+            
+            container.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>';
+
+            try {
+                const response = await fetch(`/api/moderation/flagged?status=${status}`);
+                const data = await response.json();
+
+                if (!data.success) {
+                    container.innerHTML = '<p class="text-danger">Failed to load flagged reviews</p>';
+                    return;
+                }
+
+                if (data.flagged_reviews.length === 0) {
+                    container.innerHTML = `<p class="text-center text-muted">No ${status} reviews found</p>`;
+                    return;
+                }
+
+                const html = data.flagged_reviews.map(review => {
+                    const isPending = review.status === 'pending';
+                    const flaggedDate = new Date(review.flagged_at).toLocaleString();
+                    
+                    return `
+                        <div class="flagged-review-card ${review.status}">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <strong>${review.username}</strong> 
+                                    <span class="badge badge-${review.status}">${review.status.toUpperCase()}</span>
+                                </div>
+                                <small class="text-muted">${flaggedDate}</small>
+                            </div>
+                            
+                            <div>
+                                <a href="/restaurant/${review.restaurant_id}" class="text-decoration-none">
+                                    <strong>${review.restaurant_name}</strong>
+                                </a>
+                                <span class="text-warning ms-2">${'⭐'.repeat(Math.round(review.rating))}</span>
+                            </div>
+                            
+                            <div class="flagged-reason">
+                                <strong>⚠️ Flagged Reason:</strong> ${review.flagged_reason}
+                            </div>
+                            
+                            <div class="mt-2 mb-2">
+                                <strong>Review Text:</strong>
+                                <div class="p-2 bg-light rounded">${review.review_text}</div>
+                            </div>
+                            
+                            ${isPending ? `
+                                <div class="mt-3">
+                                    <input type="text" class="form-control mb-2" id="notes_${review.flag_id}" 
+                                           placeholder="Add moderator notes (optional)">
+                                    <div class="btn-group w-100">
+                                        <button class="btn btn-success" onclick="moderateReview(${review.flag_id}, 'approve')">
+                                            ✅ Approve
+                                        </button>
+                                        <button class="btn btn-danger" onclick="moderateReview(${review.flag_id}, 'reject')">
+                                            ❌ Reject & Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+
+                container.innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading flagged reviews:', error);
+                container.innerHTML = '<p class="text-danger">Error loading reviews</p>';
+            }
+        }
+
+        async function moderateReview(flagId, action) {
+    const notes = document.getElementById(`notes_${flagId}`)?.value || '';
+    
+    const confirmMsg = action === 'approve' 
+        ? 'Approve this review?' 
+        : 'Reject and delete this review?';
+    
+    if (!confirm(confirmMsg)) return;
+
+    try {
+        const response = await fetch(`/api/moderation/moderate/${flagId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                action: action.toLowerCase(),   // ← Force lowercase
+                notes: notes 
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert(`✅ Review ${action}d successfully!`);
+            loadFlaggedReviews();
+            loadModerationStats();
+        } else {
+            alert('❌ ' + (data.message || 'Operation failed'));
+        }
+    } catch (error) {
+        alert('❌ Failed to process review');
+    }
+}
+
 
         window.onload = checkLogin;
     </script>
