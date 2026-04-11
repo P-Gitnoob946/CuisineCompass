@@ -670,7 +670,7 @@ def get_friends():
     WHERE f.user_id_1 = :uid1
       AND f.status = 'accepted'
 
-    UNION
+    UNION ALL
 
     SELECT 
         u.user_id, u.username, u.email, u.city, f.status, f.accepted_at
@@ -682,12 +682,16 @@ def get_friends():
 
     ORDER BY accepted_at DESC
 """, {
-    'uid1': session['user_id'],
-    'uid2': session['user_id']
+    'uid1': int(session['user_id']),
+    'uid2': int(session['user_id'])
 })
-        
+
+
+        rows=cursor.fetchall()
+        print("SESSION USER:", session.get('user_id'))   # 👈 ADD
+        print("RAW ROWS FROM DB:", rows)                 # 👈 ADD
         friends = []
-        for row in cursor:
+        for row in rows:
             friends.append({
                 'user_id': row[0],
                 'username': row[1],
@@ -711,6 +715,15 @@ def get_friends():
             'success': False,
             'message': f'Error: {str(e)}'
         }), 500
+
+        
+@app.route('/api/me', methods=['GET'])
+@login_required
+def get_me():
+    return jsonify({
+        'user_id': session.get('user_id'),
+        'username': session.get('username')
+    })
 
 @app.route('/api/friends/requests', methods=['GET'])
 @login_required
@@ -1137,6 +1150,146 @@ def calculate_distance():
         return jsonify({
             'success': True,
             'distance_km': round(distance, 2)
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error: {str(e)}'
+        }), 500
+
+# ============================================
+# MODERATION API ENDPOINTS
+# ============================================
+
+@app.route('/api/moderation/flagged', methods=['GET'])
+@login_required
+def get_flagged_reviews_api():
+    if session.get('role') != 'admin':
+        return jsonify({'success': False, 'message': 'Admin access required'}), 403
+    
+    try:
+        status = request.args.get('status', 'pending').lower()
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        result_cursor = cursor.callfunc(
+            'get_flagged_reviews',
+            oracledb.CURSOR,
+            [status]
+        )
+        
+        flagged_reviews = []
+        for row in result_cursor:
+            flagged_reviews.append({
+                'flag_id': int(row[0]),
+                'rating_id': int(row[1]),
+                'restaurant_id': int(row[2]),
+                'restaurant_name': row[3],
+                'user_id': int(row[4]),
+                'username': row[5],
+                'flagged_reason': row[6],
+                'review_text': row[7],
+                'rating': float(row[8]) if row[8] else 0,
+                'status': row[9],
+                'flagged_at': row[10].strftime('%Y-%m-%d %H:%M') if row[10] else None,
+                'resolved_by': int(row[11]) if row[11] else None,
+                'resolved_at': row[12].strftime('%Y-%m-%d %H:%M') if row[12] else None
+            })
+        
+        result_cursor.close()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'flagged_reviews': flagged_reviews
+        })
+        
+    except Exception as e:
+        print("Flagged reviews error:", str(e))
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/moderation/moderate/<int:flag_id>', methods=['POST'])
+@login_required
+def moderate_review_api(flag_id):
+    if session.get('role') != 'admin':
+        return jsonify({'success': False, 'message': 'Admin access required'}), 403
+    
+    try:
+        data = request.json
+        action = data.get('action', '').lower().strip()
+        notes = data.get('notes', '')
+
+        if action == 'approve':
+            db_action = 'approved'
+        elif action == 'reject':
+            db_action = 'rejected'
+        else:
+            return jsonify({'success': False, 'message': 'Invalid action'}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.callproc('moderate_review', [
+            flag_id,
+            session['user_id'],
+            db_action,
+            notes
+        ])
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Review {action}d successfully!'
+        })
+        
+    except Exception as e:
+        print("Moderation Error:", str(e))
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/moderation/stats', methods=['GET'])
+@login_required
+def get_moderation_stats_api():
+    """Get moderation statistics - ADMIN ONLY"""
+    if session.get('role') != 'admin':
+        return jsonify({
+            'success': False,
+            'message': 'Admin access required'
+        }), 403
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        result_cursor = cursor.callfunc(
+            'get_moderation_stats',
+            oracledb.CURSOR
+        )
+        
+        row = result_cursor.fetchone()
+        
+        stats = {
+            'total_flagged': int(row[0]) if row[0] else 0,
+            'pending_count': int(row[1]) if row[1] else 0,
+            'approved_count': int(row[2]) if row[2] else 0,
+            'rejected_count': int(row[3]) if row[3] else 0
+        }
+        
+        result_cursor.close()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'stats': stats
         })
         
     except Exception as e:
